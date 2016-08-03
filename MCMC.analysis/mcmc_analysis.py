@@ -20,29 +20,46 @@ class mcmc_analysis(object):
                 # check if weight is included
                 # if not, we assume uniform weight
 
-                if 'weight' in os.listdir(chain_path)
+                if ('weight' in os.listdir(chain_path)):
                     self.has_weight = True
                 else:
                     self.has_weight = False
 
-                if features is None:
+                if feature is None:
                     parameter = os.listdir(chain_path)
                 else:
                     if (self.has_weight):
-                        parameter = np.unique(feature.append('weight')).tolist()
+                        feature.append('weight')
+                        parameter = np.unique(feature).tolist()
+  
+                print parameter
                 
+                try:
+                    parameter.remove('paramnames')
+                except ValueError:
+                    pass
+
                 self.parameter = parameter
-                self.chain = self.read_chain_single_column()
+                self.read_chain_single_column()
 
         else:
             if (os.path.isfile(chain_csv_file)):
                 df = pd.read_csv(chain_csv_file)
+        
+        self.num_sample = dict()
+        for param in self.parameter:
+            print param
+            self.num_sample[param] = np.shape(self.chain[param])[0]
 
     def read_chain_single_column(self):
         
         for param in self.parameter:
-            tmp = np.loadtxt(param)
+            print self.chain_path+'/'+param
+            tmp = np.loadtxt(self.chain_path+'/'+param)
             self.chain[param] = tmp
 
-        
+    
+    def create_2d_posterior(self, x_param, y_param, xra=None, yra=None):
+        a =1
+
 
