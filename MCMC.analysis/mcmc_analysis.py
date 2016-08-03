@@ -10,23 +10,39 @@ class mcmc_analysis(object):
             print "Stop and exit."
             os._exit(0)
 
+        self.chain = dict()
 
         if (chain_csv_file is None):
             if (os.path.isdir(chain_path)):
 
                 self.chain_path = chain_path
 
+                # check if weight is included
+                # if not, we assume uniform weight
+
+                if 'weight' in os.listdir(chain_path)
+                    self.has_weight = True
+                else:
+                    self.has_weight = False
+
                 if features is None:
                     parameter = os.listdir(chain_path)
                 else:
-                    parameter = np.unique(feature.append('weight')).tolist()
-
-                self.read_chain_single_column(parameter)
+                    if (self.has_weight):
+                        parameter = np.unique(feature.append('weight')).tolist()
+                
+                self.parameter = parameter
+                self.chain = self.read_chain_single_column()
 
         else:
             if (os.path.isfile(chain_csv_file)):
                 df = pd.read_csv(chain_csv_file)
 
-    def read_chain_single_column(self, parameter)
+    def read_chain_single_column(self):
+        
+        for param in self.parameter:
+            tmp = np.loadtxt(param)
+            self.chain[param] = tmp
+
         
 
