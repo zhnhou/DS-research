@@ -59,7 +59,21 @@ class mcmc_analysis(object):
             self.chain[param] = tmp
 
     
-    def create_2d_posterior(self, x_param, y_param, xra=None, yra=None):
-        a =1
+    def create_2d_posterior(self, x_param, y_param, xra=None, yra=None, nbins_raw=50, frate=5.0):
+        
+        xmin = np.amin(self.chain[x_param])
+        xmax = np.amax(self.chain[x_param])
+        ymin = np.amin(self.chain[y_param])
+        ymax = np.amax(self.chain[y_param])
 
+        dx = (xmax - xmin) / nbins_raw
+        dy = (ymax - ymin) / nbins_raw
 
+        xcoord_raw = (self.chain[x_param] - xmin - 0.50*dx) / dx
+        ycoord_raw = (self.chain[y_param] - ymin - 0.50*dy) / dy
+
+        surf_raw = np.zeros((nbins_raw, nbins_raw))
+
+        num_sample = min(self.num_sample[x_param], self.num_sample[y_param], self.num_sample['weight'])
+        for i in np.arange(num_sample):
+            surf_raw[int(xcoord_raw[i]), int(ycoord_raw[i])] += self.chain['weight'][i]
