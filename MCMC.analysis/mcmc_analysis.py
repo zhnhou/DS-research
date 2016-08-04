@@ -79,6 +79,8 @@ class mcmc_analysis(object):
         nbins_fine = int(nbins_raw * frate)
         nbins_fine = int(nbins_raw * frate)
 
+        # the half pixel below prevents the offset bias of surf_raw
+
         xcoord_raw = (self.chain[x_param] - xmin + 0.5*dx) / dx
         ycoord_raw = (self.chain[y_param] - ymin + 0.5*dy) / dy
 
@@ -102,6 +104,9 @@ class mcmc_analysis(object):
         posterior2d = posterior2d / nm
         posterior   = posterior / nm
 
+        nm = np.sum(surf_raw)
+        surf_raw = surf_raw / nm
+
         psort = np.sort(posterior)[::-1]
         pcum  = np.cumsum(psort)
 
@@ -112,11 +117,16 @@ class mcmc_analysis(object):
             ind = np.where(pcum > p)[0][0]
             clevels.append(psort[ind])
 
-        
+        d = {'grid_x':grid_x, 'grid_y':grid_y, 'posterior2d':posterior2d, 'levels'=clevels, 
+             'xmin':xmin, 'xmax':xmax, 'ymin':ymin, 'ymax':ymax, 
+             'dx_raw':dx, 'dy_raw':dy, 'posterior2d_raw':surf_raw}
+
+        '''
         plt.imshow(surf_raw, extent=[xmin, xmax, ymin, ymax], aspect=dx/dy, origin='lower')
         contour = plt.contour(grid_x, grid_y, posterior2d, clevels)
 
         plt.show()
-        
+        '''
 
+        return d
             
