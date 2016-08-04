@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import os
-import matplotlib.pyplot as plt
 from scipy.interpolate import *
 from scipy.special import *
 
@@ -36,8 +35,6 @@ class mcmc_analysis(object):
                         feature.append('weight')
                         parameter = np.unique(feature).tolist()
   
-                print parameter
-                
                 try:
                     parameter.remove('paramnames')
                 except ValueError:
@@ -52,13 +49,12 @@ class mcmc_analysis(object):
         
         self.num_sample = dict()
         for param in self.parameter:
-            print param
             self.num_sample[param] = np.shape(self.chain[param])[0]
 
     def read_chain_single_column(self):
         
         for param in self.parameter:
-            print self.chain_path+'/'+param
+            print "reading "+param
             tmp = np.loadtxt(self.chain_path+'/'+param)
             self.chain[param] = tmp
 
@@ -93,6 +89,11 @@ class mcmc_analysis(object):
         
         surf_raw = np.zeros((nbins_raw+1, nbins_raw+1))
 
+        for p in [x_param, y_param]:
+            if not (p in self.parameter):
+                self.parameter.append(p)
+                self.num_sample[p] = np.shape(self.chain[p])[0]
+
         num_sample = min(self.num_sample[x_param], self.num_sample[y_param], self.num_sample['weight'])
         for i in np.arange(num_sample):
             surf_raw[int(xcoord_raw[i]), int(ycoord_raw[i])] += self.chain['weight'][i]
@@ -104,8 +105,10 @@ class mcmc_analysis(object):
         posterior2d = posterior2d / nm
         posterior   = posterior / nm
 
+        '''
         nm = np.sum(surf_raw)
         surf_raw = surf_raw / nm
+        '''
 
         psort = np.sort(posterior)[::-1]
         pcum  = np.cumsum(psort)
@@ -117,16 +120,11 @@ class mcmc_analysis(object):
             ind = np.where(pcum > p)[0][0]
             clevels.append(psort[ind])
 
-        d = {'grid_x':grid_x, 'grid_y':grid_y, 'posterior2d':posterior2d, 'levels'=clevels, 
+        d = {'grid_x':grid_x, 'grid_y':grid_y, 'posterior2d':posterior2d, 'levels':clevels, 
              'xmin':xmin, 'xmax':xmax, 'ymin':ymin, 'ymax':ymax, 
-             'dx_raw':dx, 'dy_raw':dy, 'posterior2d_raw':surf_raw}
-
-        '''
-        plt.imshow(surf_raw, extent=[xmin, xmax, ymin, ymax], aspect=dx/dy, origin='lower')
-        contour = plt.contour(grid_x, grid_y, posterior2d, clevels)
-
-        plt.show()
-        '''
+             'dx_raw':dx, 'dy_raw':dy, 'posterior2d_raw':surf_raw,
+             'dx_fine':dx_fine, 'dy_fine':dy_fine}
 
         return d
+
             
