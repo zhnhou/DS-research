@@ -79,8 +79,8 @@ class mcmc_analysis(object):
         nbins_fine = int(nbins_raw * frate)
         nbins_fine = int(nbins_raw * frate)
 
-        xcoord_raw = (self.chain[x_param] - xmin) / dx
-        ycoord_raw = (self.chain[y_param] - ymin) / dy
+        xcoord_raw = (self.chain[x_param] - xmin + 0.5*dx) / dx
+        ycoord_raw = (self.chain[y_param] - ymin + 0.5*dy) / dy
 
         coord_x, coord_y = np.mgrid[xmin:xmax:(nbins_raw+1)*1j,  ymin:ymax:(nbins_raw+1)*1j]
         grid_x,  grid_y  = np.mgrid[xmin:xmax:(nbins_fine+1)*1j, ymin:ymax:(nbins_fine+1)*1j]
@@ -112,7 +112,8 @@ class mcmc_analysis(object):
             ind = np.where(pcum > p)[0][0]
             clevels.append(psort[ind])
 
-        #plt.imshow(posterior2d, extent=[xmin, xmax, ymin, ymax], aspect=(xmax-xmin)/(ymax-ymin), origin='lower', interpolation='none')
+        
+        plt.imshow(surf_raw, extent=[xmin, xmax, ymin, ymax], aspect=dx/dy, origin='lower')
         contour = plt.contour(grid_x, grid_y, posterior2d, clevels)
 
         plt.show()
