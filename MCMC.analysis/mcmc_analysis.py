@@ -1,6 +1,10 @@
 import numpy as np
 import pandas as pd
 import os
+import matplotlib.pyplot as plt
+from scipy.interpolate import *
+from scipy.special import *
+
 
 class mcmc_analysis(object):
     def __init__(self, chain_csv_file=None, chain_path=None, feature=None):
@@ -69,11 +73,49 @@ class mcmc_analysis(object):
         dx = (xmax - xmin) / nbins_raw
         dy = (ymax - ymin) / nbins_raw
 
-        xcoord_raw = (self.chain[x_param] - xmin - 0.50*dx) / dx
-        ycoord_raw = (self.chain[y_param] - ymin - 0.50*dy) / dy
+        dx_fine = dx / frate
+        dy_fine = dy / frate
 
-        surf_raw = np.zeros((nbins_raw, nbins_raw))
+        nbins_fine = int(nbins_raw * frate)
+        nbins_fine = int(nbins_raw * frate)
+
+        xcoord_raw = (self.chain[x_param] - xmin) / dx
+        ycoord_raw = (self.chain[y_param] - ymin) / dy
+
+        coord_x, coord_y = np.mgrid[xmin:xmax:(nbins_raw+1)*1j,  ymin:ymax:(nbins_raw+1)*1j]
+        grid_x,  grid_y  = np.mgrid[xmin:xmax:(nbins_fine+1)*1j, ymin:ymax:(nbins_fine+1)*1j]
+
+        points = np.zeros(((nbins_raw+1)*(nbins_raw+1),2))
+        points[:,0] = coord_x.reshape((nbins_raw+1)*(nbins_raw+1))
+        points[:,1] = coord_y.reshape((nbins_raw+1)*(nbins_raw+1))
+        
+        surf_raw = np.zeros((nbins_raw+1, nbins_raw+1))
 
         num_sample = min(self.num_sample[x_param], self.num_sample[y_param], self.num_sample['weight'])
         for i in np.arange(num_sample):
             surf_raw[int(xcoord_raw[i]), int(ycoord_raw[i])] += self.chain['weight'][i]
+
+        posterior2d = griddata(points, np.reshape(surf_raw, (nbins_raw+1)*(nbins_raw+1)), (grid_x, grid_y), method='cubic')
+        posterior = posterior2d.reshape((nbins_fine+1)*(nbins_fine+1))
+
+        nm = np.sum(posterior2d)
+        posterior2d = posterior2d / nm
+        posterior   = posterior / nm
+
+        psort = np.sort(posterior)[::-1]
+        pcum  = np.cumsum(psort)
+
+        clevels = []
+        sigma = [2.0, 1.0]
+        ptes = erf(sigma / np.sqrt(2.0))
+        for p in ptes:
+            ind = np.where(pcum > p)[0][0]
+            clevels.append(psort[ind])
+
+        #plt.imshow(posterior2d, extent=[xmin, xmax, ymin, ymax], aspect=(xmax-xmin)/(ymax-ymin), origin='lower', interpolation='none')
+        contour = plt.contour(grid_x, grid_y, posterior2d, clevels)
+
+        plt.show()
+        
+
+            
