@@ -3,6 +3,33 @@ import pandas as pd
 import os
 from scipy.interpolate import *
 from scipy.special import *
+from scipy.ndimage.filters import gaussian_filter
+from sklearn import mixture
+
+import matplotlib.pyplot as plt
+
+
+def gaussian_2d(x, y, x0, y0, xsig, ysig):
+
+    return 1/(2*np.pi*xsig*ysig) * np.exp(-0.5*(((x-x0) / xsig)**2 + ((y-y0) / ysig)**2))
+
+def plotGMM(g, n, pt, xmin, xmax, ymin, ymax):
+    x = np.linspace(xmin, xmax, num=200)
+    y = np.linspace(ymin, ymax, num=200)
+    X, Y = np.meshgrid(x, y)
+ 
+    if pt == 1:
+        for i in xrange(n):
+            Z1 = gaussian_2d(X, Y, g.means_[i, 0], g.means_[i, 1], g.covars_[i, 0], g.covars_[i, 1])
+            plt.contour(X, Y, Z1, linewidths=0.5)
+ 
+    #print g.means_
+    plt.plot(g.means_[0][0],g.means_[0][1], '+', markersize=13, mew=3)
+    plt.plot(g.means_[1][0],g.means_[1][1], '+', markersize=13, mew=3)
+    plt.plot(g.means_[2][0],g.means_[2][1], '+', markersize=13, mew=3)
+    plt.plot(g.means_[3][0],g.means_[3][1], '+', markersize=13, mew=3)
+
+    plt.show()
 
 
 class mcmc_analysis(object):
@@ -59,7 +86,7 @@ class mcmc_analysis(object):
             self.chain[param] = tmp
 
     
-    def create_2d_posterior(self, x_param, y_param, xra=None, yra=None, nbins_raw=50, frate=5.0):
+    def create_2d_posterior(self, x_param, y_param, xra=None, yra=None, nbins_raw=50, frate=5.0, gaussfilter_sigma=0):
         
         xmin = np.amin(self.chain[x_param])
         xmax = np.amax(self.chain[x_param])
@@ -80,12 +107,9 @@ class mcmc_analysis(object):
         xcoord_raw = (self.chain[x_param] - xmin + 0.5*dx) / dx
         ycoord_raw = (self.chain[y_param] - ymin + 0.5*dy) / dy
 
+        
         coord_x, coord_y = np.mgrid[xmin:xmax:(nbins_raw+1)*1j,  ymin:ymax:(nbins_raw+1)*1j]
         grid_x,  grid_y  = np.mgrid[xmin:xmax:(nbins_fine+1)*1j, ymin:ymax:(nbins_fine+1)*1j]
-
-        points = np.zeros(((nbins_raw+1)*(nbins_raw+1),2))
-        points[:,0] = coord_x.reshape((nbins_raw+1)*(nbins_raw+1))
-        points[:,1] = coord_y.reshape((nbins_raw+1)*(nbins_raw+1))
         
         surf_raw = np.zeros((nbins_raw+1, nbins_raw+1))
 
@@ -98,17 +122,20 @@ class mcmc_analysis(object):
         for i in np.arange(num_sample):
             surf_raw[int(xcoord_raw[i]), int(ycoord_raw[i])] += self.chain['weight'][i]
 
-        posterior2d = griddata(points, np.reshape(surf_raw, (nbins_raw+1)*(nbins_raw+1)), (grid_x, grid_y), method='cubic')
+        points = np.zeros(((nbins_raw+1)*(nbins_raw+1),3))
+        points[:,0] = coord_x.reshape((nbins_raw+1)*(nbins_raw+1))
+        points[:,1] = coord_y.reshape((nbins_raw+1)*(nbins_raw+1))
+        points[:,2] = np.reshape(surf_raw, (nbins_raw+1)*(nbins_raw+1))
+
+        posterior2d = gaussian_filter( griddata(points[:,0:2], points[:,2], (grid_x, grid_y), method='cubic'), gaussfilter_sigma)
         posterior = posterior2d.reshape((nbins_fine+1)*(nbins_fine+1))
 
         nm = np.sum(posterior2d)
         posterior2d = posterior2d / nm
         posterior   = posterior / nm
 
-        '''
         nm = np.sum(surf_raw)
         surf_raw = surf_raw / nm
-        '''
 
         psort = np.sort(posterior)[::-1]
         pcum  = np.cumsum(psort)
@@ -127,4 +154,62 @@ class mcmc_analysis(object):
 
         return d
 
-            
+    def create_2d_gmm(self, x_param, y_param, num_select=50000, do_weight=False):
+
+        xmin = np.amin(self.chain[x_param])
+        xmax = np.amax(self.chain[x_param])
+        ymin = np.amin(self.chain[y_param])
+        ymax = np.amax(self.chain[y_param])
+        
+        num_sample = self.num_sample['weight']
+        n_interval = num_sample / num_select
+
+        x = self.chain[x_param][::n_interval][0:num_select]
+        y = self.chain[y_param][::n_interval][0:num_select]
+
+        if (do_weight):
+            w = np.int64(self.chain['weight'][::n_interval][0:num_select])
+
+            num_steps = np.sum(w)
+
+            X_train = np.zeros((num_steps,2))
+
+            ip = 0
+            for i in np.arange(num_select):
+                istart = ip
+                iend = ip+w[i]
+
+                X_train[istart:iend,0] = x[i]
+                X_train[istart:iend,1] = y[i]
+                ip = iend + 1
+        else:
+            X_train = np.zeros((num_select,2))
+            X_train[:,0] = x
+            X_train[:,1] = y
+
+        g = mixture.GMM(n_components=4, covariance_type='full', n_iter=200, min_covar=1.0e-10)
+        g.fit(X_train)
+
+        grid_x = np.linspace(xmin, xmax, num=400)
+        grid_y = np.linspace(ymin, ymax, num=400)
+
+        X, Y = np.meshgrid(grid_x,grid_y)
+        XX = np.array([X.ravel(), Y.ravel()]).T
+
+        Z = -g.score_samples(XX)[0]
+        Z = Z.reshape(X.shape)
+
+        return X, Y, Z
+
+
+    def create_2d_scatter(self, x_param, y_param, z_param, num_select=1000):
+
+        num_sample = self.num_sample['weight']
+
+        n_interval = num_sample / num_select
+
+        x = self.chain[x_param][::n_interval]
+        y = self.chain[y_param][::n_interval]
+        z = self.chain[z_param][::n_interval]
+
+        return x, y, z
