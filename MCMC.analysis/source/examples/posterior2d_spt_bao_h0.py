@@ -1,23 +1,6 @@
 import matplotlib.pyplot as plt
-from scipy.special import *
+from make_figures import *
 
-def calc_clevel_gmm(logprob):
-    z = np.exp(-logprob)
-    nm = np.sum(z)
-    z /= nm
-
-    psort = np.sort(z.flatten())[::-1]
-    pcum  = np.cumsum(psort)
-
-    clevels = []
-    sigma = [2.0, 1.0]
-    ptes = erf(sigma / np.sqrt(2.0))
-
-    for p in ptes:
-        ind = np.where(pcum > p)[0][0]
-        clevels.append(psort[ind])
-
-    return z, clevels
 
 
 if __name__ == '__main__':
@@ -32,6 +15,7 @@ if __name__ == '__main__':
 
     s12tau_chain_path = '/Users/zhenhou/Downloads/lcdm_camb_s12tau/'
 
+    pdf_file = '../../figures/posterior_spt_bao_h0.pdf'
     
     x_param = 'H0'
     y_param = 'Dv057rs'
@@ -42,6 +26,12 @@ if __name__ == '__main__':
     m = mcmc_analysis(chain_path=s12tau_chain_path, feature=feature)
     m.chain['Dv057rs'] = 100.0 * m.chain['rs_zdrag'] / m.chain['Dv_0.57']
 
+    fp = FigProp_CMBBAOH0()
+
+    fig, ax = plt.subplots()
+
+    plt.rc('font', family='serif')
+
     x_select, y_select, z_select = m.create_2d_scatter(x_param, y_param, z_param, num_select=10000)
     scatter = plt.scatter(x_select, y_select, c=z_select, s=1, vmin=0.105, vmax=0.155, edgecolors='face', cmap=plt.get_cmap('YlGnBu_r'))
 
@@ -50,5 +40,19 @@ if __name__ == '__main__':
     z, clevels = calc_clevel_gmm(Z)
 
     plt.contour(X, Y, z, levels=clevels, colors='k')
-    plt.axes().set_aspect(11)
-    plt.show()
+
+    ax.set_xlim([fp.xmin, fp.xmax])
+    ax.set_ylim([fp.ymin, fp.ymax])
+
+    ax.set_xticks(fp.xticks)
+    ax.set_yticks(fp.yticks)
+    
+    ax.set_xlabel(fp.xlabel, fontsize=16)
+    ax.set_ylabel(fp.ylabel, fontsize=16)
+
+    ax.set_xticklabels(fp.xticklabels, fontsize=16)
+    ax.set_yticklabels(fp.yticklabels, fontsize=16)
+
+    ax.set_aspect((fp.xmax-fp.xmin)/(fp.ymax-fp.ymin))
+
+    plt.savefig(pdf_file, format='pdf')
