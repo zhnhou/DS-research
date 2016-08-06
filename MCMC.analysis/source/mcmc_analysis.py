@@ -9,28 +9,6 @@ from sklearn import mixture
 import matplotlib.pyplot as plt
 
 
-def gaussian_2d(x, y, x0, y0, xsig, ysig):
-
-    return 1/(2*np.pi*xsig*ysig) * np.exp(-0.5*(((x-x0) / xsig)**2 + ((y-y0) / ysig)**2))
-
-def plotGMM(g, n, pt, xmin, xmax, ymin, ymax):
-    x = np.linspace(xmin, xmax, num=200)
-    y = np.linspace(ymin, ymax, num=200)
-    X, Y = np.meshgrid(x, y)
- 
-    if pt == 1:
-        for i in xrange(n):
-            Z1 = gaussian_2d(X, Y, g.means_[i, 0], g.means_[i, 1], g.covars_[i, 0], g.covars_[i, 1])
-            plt.contour(X, Y, Z1, linewidths=0.5)
- 
-    #print g.means_
-    plt.plot(g.means_[0][0],g.means_[0][1], '+', markersize=13, mew=3)
-    plt.plot(g.means_[1][0],g.means_[1][1], '+', markersize=13, mew=3)
-    plt.plot(g.means_[2][0],g.means_[2][1], '+', markersize=13, mew=3)
-    plt.plot(g.means_[3][0],g.means_[3][1], '+', markersize=13, mew=3)
-
-    plt.show()
-
 
 class mcmc_analysis(object):
     def __init__(self, chain_csv_file=None, chain_path=None, feature=None):

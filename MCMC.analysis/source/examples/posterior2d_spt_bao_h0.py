@@ -33,20 +33,14 @@ if __name__ == '__main__':
     s12tau_chain_path = '/Users/zhenhou/Downloads/lcdm_camb_s12tau/'
 
     
-    x_param = 'ns'
     x_param = 'H0'
-
-    y_param = 'Omegabh2'
     y_param = 'Dv057rs'
-
     z_param = 'Omegamh2'
 
     feature = [x_param, 'Dv_0.57', 'rs_zdrag', z_param]
 
     m = mcmc_analysis(chain_path=s12tau_chain_path, feature=feature)
     m.chain['Dv057rs'] = 100.0 * m.chain['rs_zdrag'] / m.chain['Dv_0.57']
-#    m.chain['ns'] *= 100.0
-#    m.chain['Omegabh2'] *= 1000.0
 
     x_select, y_select, z_select = m.create_2d_scatter(x_param, y_param, z_param, num_select=10000)
     scatter = plt.scatter(x_select, y_select, c=z_select, s=1, vmin=0.105, vmax=0.155, edgecolors='face', cmap=plt.get_cmap('YlGnBu_r'))
