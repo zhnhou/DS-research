@@ -74,7 +74,7 @@ class Figure_CMBBAOH0(object):
 
         fig, ax = plt.subplots()
 
-        ax.set_position([0.1,0.125,0.8,0.8])
+        ax.set_position([0.1,0.125,0.8*13.0/16,0.8])
 
         x_select, y_select, z_select = self.mcmc.create_2d_scatter(self.x_param, self.y_param, self.z_param, num_select=10000)
         scatter = plt.scatter(x_select, y_select, c=z_select, s=1, vmin=0.105, vmax=0.155, edgecolors='face', cmap=plt.get_cmap('YlGnBu_r'))
