@@ -32,18 +32,22 @@ class FigProp_CMBBAOH0(object):
         self.H0_mean = H0_mean
         self.H0_err = H0_err
 
-        self.xmin = 60
-        self.xmax = 90
+        self.xmin = 61
+        self.xmax = 89
         self.ymin = 6.5
         self.ymax = 9.5
+        self.zmin = 0.105
+        self.zmax = 0.155
 
-        self.xticks = [60, 70, 80, 90]
+        self.xticks = [65, 70, 75, 80, 85]
         self.yticks = [7, 8, 9]
+        self.cbticks = [0.11,0.12,0.13,0.14,0.15]
 
         self.gray_contour = ['lightgray', 'gray']
 
         self.xlabel = r'$H_0\;[\mathrm{km\,s^{-1}\,Mpc^{-1}}]$'
         self.ylabel = r'$10^2r_s(z_{\mathrm{drag}}) / D_{\mathrm{v}}(0.57)$'
+        self.cblabel = r'$\Omega_m h^2$'
 
         xticklabels = []
         for x in self.xticks:
@@ -53,8 +57,13 @@ class FigProp_CMBBAOH0(object):
         for y in self.yticks:
             yticklabels.append(r"$"+str(y)+"$")
 
+        cbticklabels = []
+        for z in self.cbticks:
+            cbticklabels.append(r"$"+str(z)+"$")
+
         self.xticklabels = xticklabels
         self.yticklabels = yticklabels
+        self.cbticklabels = cbticklabels
 
 class Figure_CMBBAOH0(object):
     def __init__(self, cmb_type, chain_path, z_param='Omegamh2', NoColorBar=False, NoYticks=False, 
@@ -87,7 +96,7 @@ class Figure_CMBBAOH0(object):
 
         i = 0 
         for err_scale in [2.4477, 1.51]:
-            self.ax.add_patch(Ellipse([self.fp.H0_mean, self.fp.BAO_mean], 2*err_scale*self.fp.H0_err, 2*err_scale*self.fp.BAO_err, fill=True, color=self.fp.gray_contour[i], zorder=i))
+            self.ax.add_patch(Ellipse([self.fp.H0_mean, self.fp.BAO_mean], 2*err_scale*self.fp.H0_err, 2*err_scale*self.fp.BAO_err, fill=True, color=self.fp.gray_contour[i], zorder=i, linewidth=0))
             i += 1
 
         plt.plot([self.fp.xmin, self.fp.xmax], [self.fp.BAO_mean, self.fp.BAO_mean], zorder=2, color='k', linewidth=0.8)
@@ -105,10 +114,10 @@ class Figure_CMBBAOH0(object):
         
         self.ax = ax
 
-        ax.set_position([0.1,0.125,0.8*13.0/16,0.8])
+        ax.set_position([0.1,0.125,0.850*13.0/16,0.850])
 
         x_select, y_select, z_select = self.mcmc.create_2d_scatter(self.x_param, self.y_param, self.z_param, num_select=10000)
-        scatter = plt.scatter(x_select, y_select, c=z_select, s=1, vmin=0.105, vmax=0.155, edgecolors='face', cmap=plt.get_cmap('YlGnBu_r'), zorder=3)
+        scatter = plt.scatter(x_select, y_select, c=z_select, s=1, vmin=self.fp.zmin, vmax=self.fp.zmax, edgecolors='face', cmap=plt.get_cmap('YlGnBu_r'), zorder=3)
 
         X, Y, Z = self.mcmc.create_2d_gmm(self.x_param, self.y_param, do_weight=False)
 
@@ -124,14 +133,12 @@ class Figure_CMBBAOH0(object):
             cax = divider.append_axes("right", size="5%", pad=0.2)
             
 #            cbar = fig.colorbar(scatter, ticks=(-100,-50,0,50,100), orientation='vertical', cax=cax,
-            cbar = fig.colorbar(scatter, orientation='vertical', cax=cax,
+            cbar = fig.colorbar(scatter, ticks=self.fp.cbticks, orientation='vertical', cax=cax,
                    drawedges=False)
 
-            cbar = fig.colorbar(scatter, orientation='vertical', cax=cax, drawedges=False)
-            
             cbar.solids.set_edgecolor("face")
-#            cbar.ax.set_ylabel(' ', fontsize=16)
-#            cbar.ax.axes.set_yticklabels(["$-100$","$-50$","$0$","$50$","$100$"], fontsize=16)
+            cbar.ax.set_ylabel(self.fp.cblabel, fontsize=18)
+            cbar.ax.axes.set_yticklabels(self.fp.cbticklabels, fontsize=16)
             cbar.outline.set_edgecolor('black')
             cbar.outline.set_linewidth(1.2)
 
@@ -141,10 +148,11 @@ class Figure_CMBBAOH0(object):
         ax.set_xticks(self.fp.xticks)
         ax.set_yticks(self.fp.yticks)
     
-        ax.set_xlabel(self.fp.xlabel, fontsize=16)
-        ax.set_ylabel(self.fp.ylabel, fontsize=16)
+        ax.set_xlabel(self.fp.xlabel, fontsize=18)
+        ax.set_ylabel(self.fp.ylabel, fontsize=18)
 
         ax.set_xticklabels(self.fp.xticklabels, fontsize=16)
         ax.set_yticklabels(self.fp.yticklabels, fontsize=16) 
 
         plt.savefig(self.pdf_file, format='pdf')
+        os.system("convert -density 400 "+self.pdf_file+" "+self.pdf_file[:-4]+".png")
