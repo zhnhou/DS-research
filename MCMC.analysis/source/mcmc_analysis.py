@@ -132,7 +132,7 @@ class mcmc_analysis(object):
 
         return d
 
-    def create_2d_gmm(self, x_param, y_param, num_select=50000, do_weight=False):
+    def create_2d_gmm(self, x_param, y_param, num_select=None, do_weight=False):
 
         xmin = np.amin(self.chain[x_param])
         xmax = np.amax(self.chain[x_param])
@@ -140,20 +140,28 @@ class mcmc_analysis(object):
         ymax = np.amax(self.chain[y_param])
         
         num_sample = self.num_sample['weight']
-        n_interval = num_sample / num_select
 
-        x = self.chain[x_param][::n_interval][0:num_select]
-        y = self.chain[y_param][::n_interval][0:num_select]
+        if (num_select is None):
+            num_select_gmm = num_sample
+
+            x = self.chain[x_param]
+            y = self.chain[y_param]
+            w = np.int64(self.chain['weight'])
+        else:
+            num_select_gmm = num_select
+            n_interval = num_sample / num_select_gmm
+
+            x = self.chain[x_param][::n_interval][0:num_select_gmm]
+            y = self.chain[y_param][::n_interval][0:num_select_gmm]
+            w = np.int64(self.chain['weight'][::n_interval][0:num_select_gmm])
 
         if (do_weight):
-            w = np.int64(self.chain['weight'][::n_interval][0:num_select])
-
             num_steps = np.sum(w)
 
             X_train = np.zeros((num_steps,2))
 
             ip = 0
-            for i in np.arange(num_select):
+            for i in np.arange(num_select_gmm):
                 istart = ip
                 iend = ip+w[i]
 
@@ -161,7 +169,7 @@ class mcmc_analysis(object):
                 X_train[istart:iend,1] = y[i]
                 ip = iend + 1
         else:
-            X_train = np.zeros((num_select,2))
+            X_train = np.zeros((num_select_gmm,2))
             X_train[:,0] = x
             X_train[:,1] = y
 
