@@ -3,12 +3,14 @@ import matplotlib.pyplot as plt
 import healpy as hp
 
 class Healpix_SPTField(object):
-    def __init__(self, nside, background=None, input_coord='G', bad_pixels=None, offset=0, factor=1.0):
+    def __init__(self, nside, background=None, input_coord='G', bad_pixels=None, offset=0, factor=1.0, sub=None, cbar=True):
         self.nside = nside
         self.input_coord = input_coord
         self.bad_pixels = bad_pixels
         self.offset = offset
         self.factor = factor
+        self.sub = sub
+        self.cbar = cbar
         
         if not (background is None):
             self.background = background
@@ -33,12 +35,20 @@ class Healpix_SPTField(object):
         if not (self.bad_pixels is None):
             msinh[self.bad_pixels] = -1.6375e30
         
-        orth = hp.orthview(map=msinh, rot=[0.0,270.0,0.0], coord=[self.input_coord,'C'], half_sky=True, notext=True, xsize=3000, cmap=self.planck_color_map(), min=-3.1, max=7, cbticks=cbticks, cbticklabels=cbticklabels, title=' ', cbtitle=r'$\mathrm{\mu K}$')
+        if (self.cbar):
+            orth = hp.orthview(map=msinh, rot=[0.0,270.0,0.0], coord=[self.input_coord,'C'], half_sky=True, notext=True, xsize=3000, cmap=self.planck_color_map(), min=-3.1, max=7, cbticks=cbticks, cbticklabels=cbticklabels, title=' ', cbtitle=r'$\mathrm{\mu K}$', sub=self.sub, return_projected_map=True)
+        else:
+            orth = hp.orthview(map=msinh, rot=[0.0,270.0,0.0], coord=[self.input_coord,'C'], half_sky=True, notext=True, xsize=3000, cmap=self.planck_color_map(), min=-3.1, max=7, cbar=False, title=' ', sub=self.sub, return_projected_map=True)
 
-        self.create_spt_area()
-  
-        self.create_graticule([160,140,120,100], np.arange(0,360,45))
-        plt.savefig('test.png', format='png', dpi=600)
+#        self.create_spt_area()
+#        self.create_graticule([160,140,120,100], np.arange(0,360,45))
+#        plt.savefig('test.png', format='png', dpi=600)
+
+        return orth
+
+    def save_figure(fig_file, dpi=600):
+        form = fig_file[-3:]
+        plt.savefig(fig_file, format=form, dpi=dpi)
 
     def create_graticule(self, lat, lon):
 
