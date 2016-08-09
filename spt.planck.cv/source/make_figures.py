@@ -3,8 +3,12 @@ import matplotlib.pyplot as plt
 import healpy as hp
 
 class Healpix_SPTField(object):
-    def __init__(self, nside, background=None):
+    def __init__(self, nside, background=None, input_coord='G', bad_pixels=None, offset=0, factor=1.0):
         self.nside = nside
+        self.input_coord = input_coord
+        self.bad_pixels = bad_pixels
+        self.offset = offset
+        self.factor = factor
         
         if not (background is None):
             self.background = background
@@ -19,20 +23,22 @@ class Healpix_SPTField(object):
 
 #        hp.orthview(map=self.background, rot=[0.0,270.0,0.0], coord=['G','C'], half_sky=True, notext=True, min=-400, max=400, xsize=3000)
 
-        m = self.background * 1e6 - 0.8e-4 * 1e6
+        m = self.background * self.factor + self.offset * self.factor
         msinh = np.arcsinh(m * 0.5)/np.log(10.0)
 
         cbticks = np.array([-500.0,0.0,100.0,1000.0, 1e6])
         cbticklabels = np.array([r'$-500$',r'$0$',r'$100$',r'$1000$',r'$10^6$'])
         cbticks = np.arcsinh( (cbticks-80.0) * 0.5) / np.log(10.0)
          
-    
-        orth = hp.orthview(map=msinh, rot=[0.0,270.0,0.0], coord=['G','C'], half_sky=True, notext=True, xsize=3000, cmap=self.planck_color_map(), min=-3.1, max=7, cbticks=cbticks, cbticklabels=cbticklabels, title=' ', cbtitle=r'$\mathrm{\mu K}$')
+        if not (self.bad_pixels is None):
+            msinh[self.bad_pixels] = -1.6375e30
+        
+        orth = hp.orthview(map=msinh, rot=[0.0,270.0,0.0], coord=[self.input_coord,'C'], half_sky=True, notext=True, xsize=3000, cmap=self.planck_color_map(), min=-3.1, max=7, cbticks=cbticks, cbticklabels=cbticklabels, title=' ', cbtitle=r'$\mathrm{\mu K}$')
 
         self.create_spt_area()
   
         self.create_graticule([160,140,120,100], np.arange(0,360,45))
-        plt.savefig('test.png', format='png', dpi=300)
+        plt.savefig('test.png', format='png', dpi=600)
 
     def create_graticule(self, lat, lon):
 
@@ -55,7 +61,7 @@ class Healpix_SPTField(object):
         num_ra = 1000
         num_dec = 200
 
-        ra = np.arange(num_ra, dtype=np.float32)/num_ra * (360.0+106.98 - 297.84) + 297.84
+        ra = np.arange(num_ra, dtype=np.float32)/num_ra * (360.0+105 - 300) + 300.0
         ip = np.where(ra > 360.0)
         ra[ip] = ra[ip] - 360.00
 
