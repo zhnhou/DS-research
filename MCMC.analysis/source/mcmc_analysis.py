@@ -56,12 +56,18 @@ class mcmc_analysis(object):
         for param in self.parameter:
             self.num_sample[param] = np.shape(self.chain[param])[0]
 
+    def reproduce_chain_step(self):
+        if self.has_weight:
+            self.chain['step'] = np.cumsum(self.chain['weight'])
+
     def read_chain_single_column(self):
         
         for param in self.parameter:
             print "reading "+param
             tmp = np.loadtxt(self.chain_path+'/'+param)
             self.chain[param] = tmp
+
+        self.reproduce_chain_step()
 
     
     def create_2d_posterior(self, x_param, y_param, xra=None, yra=None, nbins_raw=50, frate=5.0, gaussfilter_sigma=0):
@@ -199,3 +205,4 @@ class mcmc_analysis(object):
         z = self.chain[z_param][::n_interval]
 
         return x, y, z
+

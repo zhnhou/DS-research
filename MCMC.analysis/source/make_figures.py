@@ -3,6 +3,7 @@ from scipy.special import *
 from mcmc_analysis import *
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 def calc_clevel_gmm(logprob):
@@ -22,6 +23,47 @@ def calc_clevel_gmm(logprob):
         clevels.append(psort[ind])
 
     return z, clevels
+
+'''
+def setup_multi_rectangle(self, nrow=4, ncol=2, leftmargion=0.1, lowermargin=0.1, rightmargin=0.05, uppermargin=0.05, xmargin=0.01, ymargin=0.01):
+
+    x_len = (1.0-leftmargin-rightmargin)
+
+    for irow in np.arange(nrow):
+        for icol in np.arange(ncol):
+'''
+
+
+
+class Figure_ChainAnalysis(mcmc_analysis):
+    def __init__(self, mcmc):
+        self.mcmc = mcmc
+
+    def create_chain_burnin(self, parameter=None, ncol=4, nrow=2, wspace=0.05, hspace=0.05, left=0.1, right=0.95, num_step=2000):
+
+        if not (feature is None):
+            self.parameter = parameter
+        else:
+            self.parameter = mcmc.parameter
+        gs = gridspec.GridSpec(nrow,ncol)
+        gs.update(left=left, right=right, wspace=wspace, hspace=hspace)
+        
+        i = 0
+        for irow in np.arange(nrow):
+            for icol in np.arange(ncol):
+                ax = plt.subplot(gs[irow,icol])
+                pmax = np.amax(mcmc.chain[self.parameter[i]])
+                pmin = np.amin(mcmc.chain[self.parameter[i]])
+
+                ax.plot(mcmc.chain['step'], mcmc.chain[self.parameter[i]])
+
+                ax.set_xlim([0,num_step])
+                ax.set_ylim([pmin,pmax])
+                i += 1
+
+        plt.show()
+
+
 
 
 class FigProp_CMBBAOH0(object):
@@ -156,3 +198,8 @@ class Figure_CMBBAOH0(object):
 
         plt.savefig(self.pdf_file, format='pdf')
         os.system("convert -density 400 "+self.pdf_file+" "+self.pdf_file[:-4]+".png")
+
+
+class Figure_CMBFeature(object):
+    def __init__(self):
+        self.wmap_
