@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 class mcmc_analysis(object):
-    def __init__(self, chain_csv_file=None, chain_path=None, feature=None, chain_prefix=None, is_cosmomc=False):
+    def __init__(self, chain_csv_file=None, chain_path=None, feature=None, chain_prefix=None, is_cosmomc=False, num_burnin=1000):
         
         if (chain_csv_file is None and chain_path is None):
             print "Either 'chain_csv_file' or 'chain_path' should be specified."
@@ -28,7 +28,7 @@ class mcmc_analysis(object):
                 if (self.is_cosmomc):
                     self.chain_prefix = chain_prefix
                     self.read_chain_cosmomc(parameter=feature)
-
+                    self.remove_burnin_cosmomc(num_burnin=num_burnin)
                 else:
 
                     # check if weight is included
@@ -67,21 +67,49 @@ class mcmc_analysis(object):
 
     def read_chain_cosmomc(self, parameter=None, num_chain=8):
 
+        self.chain_original = dict()
+
         num_element = np.zeros(num_chain, dtype=np.int)
     
         tmp = np.loadtxt(self.chain_path+'/'+self.chain_prefix+'.paramnames', dtype='str')
-        pname = np.intert(tmp, 0, ['weight', 'loglike'])
+        pname = np.insert(tmp, 0, ['weight', 'loglike'])
 
         if parameter is None:
             self.parameter = pname
         else:
-            self.parameter = parameter
+            try:
+                parameter.remove('paramnames')
+            except ValueError:
+                pass
+
+            self.parameter = np.insert(parameter, 0, 'weight')
+
+        self.has_weight=True
 
         for i in np.arange(num_chain)+1:
             filename = self.chain_path+'/'+self.chain_prefix+'_'+str(i)+'.txt'
             tmp = np.loadtxt(filename)
 
-            if 
+            num_element[i-1] = tmp.shape[0] 
+
+            for p in self.parameter:
+                ip = np.where(pname == p)[0]
+                
+                if i == 0:
+                    self.chain_original[p] = tmp[:,ip]
+                else:
+                    self.chain_original[p] = np.append(self.chain_original[p], tmp[:,ip])
+
+        self.num_element = num_element
+
+    def remove_burnin_cosmomc(self, num_burnin=1000):
+
+        idx_delete = []
+        for i in self.num_element:
+            idx_delete.append( (np.arange(num_burnin)+i).tolist )
+
+        for p in self.parameter:
+            self.chain[p] = np.delete( self.chain_original[p], idx_delete )
 
 
     def read_chain_single_column(self):

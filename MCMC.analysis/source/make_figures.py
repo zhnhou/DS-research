@@ -24,22 +24,14 @@ def calc_clevel_gmm(logprob):
 
     return z, clevels
 
-'''
-def setup_multi_rectangle(self, nrow=4, ncol=2, leftmargion=0.1, lowermargin=0.1, rightmargin=0.05, uppermargin=0.05, xmargin=0.01, ymargin=0.01):
-
-    x_len = (1.0-leftmargin-rightmargin)
-
-    for irow in np.arange(nrow):
-        for icol in np.arange(ncol):
-'''
-
-
 
 class Figure_ChainAnalysis(object):
     def __init__(self, chain_path, feature=None):
         self.mcmc = mcmc_analysis(chain_path=chain_path, feature=feature)
 
-    def create_chain_burnin(self, parameter=None, ncol=4, nrow=2, wspace=0.05, hspace=0.05, left=0.1, right=0.95, num_step=2000):
+    def create_chain_burnin(self, parameter=None, ncol=4, nrow=2, wspace=0.05, hspace=0.0, left=0.1, right=0.95, num_step=2000, rescale_parameter=False):
+
+        self.rescale_parameter = rescale_parameter
 
         if not (parameter is None):
             self.parameter = parameter
@@ -59,6 +51,9 @@ class Figure_ChainAnalysis(object):
 
                 ax.set_xlim([0,num_step])
                 ax.set_ylim([pmin,pmax])
+
+                if irow != nrow-1:
+                    ax.set_xticklabels([])
                 i += 1
 
         plt.show()
