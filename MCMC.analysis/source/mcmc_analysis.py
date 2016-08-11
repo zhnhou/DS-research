@@ -11,13 +11,13 @@ import matplotlib.pyplot as plt
 
 
 class mcmc_analysis(object):
-    def __init__(self, chain_csv_file=None, chain_path=None, feature=None):
+    def __init__(self, chain_csv_file=None, chain_path=None, feature=None, chain_prefix=None, is_cosmomc=False):
         
         if (chain_csv_file is None and chain_path is None):
             print "Either 'chain_csv_file' or 'chain_path' should be specified."
             print "Stop and exit."
             os._exit(0)
-
+        self.is_cosmomc = is_cosmomc
         self.chain = dict()
 
         if (chain_csv_file is None):
@@ -25,28 +25,33 @@ class mcmc_analysis(object):
 
                 self.chain_path = chain_path
 
-                # check if weight is included
-                # if not, we assume uniform weight
+                if (self.is_cosmomc):
+                    self.chain_prefix = chain_prefix
+                    self.read_chain_cosmomc(parameter=feature)
 
-                if ('weight' in os.listdir(chain_path)):
-                    self.has_weight = True
                 else:
-                    self.has_weight = False
 
-                if feature is None:
-                    parameter = os.listdir(chain_path)
-                else:
-                    if (self.has_weight):
-                        feature.append('weight')
-                        parameter = np.unique(feature).tolist()
-  
-                try:
-                    parameter.remove('paramnames')
-                except ValueError:
-                    pass
+                    # check if weight is included
+                    # if not, we assume uniform weight
+    
+                    if ('weight' in os.listdir(chain_path)):
+                        self.has_weight = True
+                    else:
+                        self.has_weight = False
 
-                self.parameter = parameter
-                self.read_chain_single_column()
+                    if feature is None:
+                        parameter = os.listdir(chain_path)
+                    else:
+                        if (self.has_weight):
+                            feature.append('weight')
+                            parameter = np.unique(feature).tolist()
+                    try:
+                        parameter.remove('paramnames')
+                    except ValueError:
+                        pass
+
+                    self.parameter = parameter
+                    self.read_chain_single_column()
 
         else:
             if (os.path.isfile(chain_csv_file)):
@@ -59,6 +64,25 @@ class mcmc_analysis(object):
     def reproduce_chain_step(self):
         if self.has_weight:
             self.chain['step'] = np.cumsum(self.chain['weight'])
+
+    def read_chain_cosmomc(self, parameter=None, num_chain=8):
+
+        num_element = np.zeros(num_chain, dtype=np.int)
+    
+        tmp = np.loadtxt(self.chain_path+'/'+self.chain_prefix+'.paramnames', dtype='str')
+        pname = np.intert(tmp, 0, ['weight', 'loglike'])
+
+        if parameter is None:
+            self.parameter = pname
+        else:
+            self.parameter = parameter
+
+        for i in np.arange(num_chain)+1:
+            filename = self.chain_path+'/'+self.chain_prefix+'_'+str(i)+'.txt'
+            tmp = np.loadtxt(filename)
+
+            if 
+
 
     def read_chain_single_column(self):
         

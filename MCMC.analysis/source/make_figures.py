@@ -35,13 +35,13 @@ def setup_multi_rectangle(self, nrow=4, ncol=2, leftmargion=0.1, lowermargin=0.1
 
 
 
-class Figure_ChainAnalysis(mcmc_analysis):
-    def __init__(self, mcmc):
-        self.mcmc = mcmc
+class Figure_ChainAnalysis(object):
+    def __init__(self, chain_path, feature=None):
+        self.mcmc = mcmc_analysis(chain_path=chain_path, feature=feature)
 
     def create_chain_burnin(self, parameter=None, ncol=4, nrow=2, wspace=0.05, hspace=0.05, left=0.1, right=0.95, num_step=2000):
 
-        if not (feature is None):
+        if not (parameter is None):
             self.parameter = parameter
         else:
             self.parameter = mcmc.parameter
@@ -52,10 +52,10 @@ class Figure_ChainAnalysis(mcmc_analysis):
         for irow in np.arange(nrow):
             for icol in np.arange(ncol):
                 ax = plt.subplot(gs[irow,icol])
-                pmax = np.amax(mcmc.chain[self.parameter[i]])
-                pmin = np.amin(mcmc.chain[self.parameter[i]])
+                pmax = np.amax(self.mcmc.chain[self.parameter[i]])
+                pmin = np.amin(self.mcmc.chain[self.parameter[i]])
 
-                ax.plot(mcmc.chain['step'], mcmc.chain[self.parameter[i]])
+                ax.plot(self.mcmc.chain['step'], self.mcmc.chain[self.parameter[i]])
 
                 ax.set_xlim([0,num_step])
                 ax.set_ylim([pmin,pmax])
