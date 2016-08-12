@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 class mcmc_analysis(object):
-    def __init__(self, chain_csv_file=None, chain_path=None, feature=None, chain_prefix=None, is_cosmomc=False, num_burnin=1000):
+    def __init__(self, chain_csv_file=None, chain_path=None, feature=None, chain_prefix=None, is_cosmomc=False, num_burnin=1000, num_chain=8):
         
         if (chain_csv_file is None and chain_path is None):
             print "Either 'chain_csv_file' or 'chain_path' should be specified."
@@ -19,6 +19,7 @@ class mcmc_analysis(object):
             os._exit(0)
         self.is_cosmomc = is_cosmomc
         self.chain = dict()
+        self.num_burnin = num_burnin
 
         if (chain_csv_file is None):
             if (os.path.isdir(chain_path)):
@@ -27,8 +28,7 @@ class mcmc_analysis(object):
 
                 if (self.is_cosmomc):
                     self.chain_prefix = chain_prefix
-                    self.read_chain_cosmomc(parameter=feature)
-                    self.remove_burnin_cosmomc(num_burnin=num_burnin)
+                    self.read_chain_cosmomc(parameter=feature, num_chain=num_chain)
                 else:
 
                     # check if weight is included
@@ -69,16 +69,16 @@ class mcmc_analysis(object):
 
         self.chain_original = dict()
 
-        num_element = np.zeros(num_chain, dtype=np.int)
+        self.num_element = np.zeros(num_chain, dtype=np.int)
     
-        tmp = np.loadtxt(self.chain_path+'/'+self.chain_prefix+'.paramnames', dtype='str')
+        tmp = np.loadtxt(self.chain_path+'/'+self.chain_prefix+'.paramnames', dtype='str')[:,0]
         pname = np.insert(tmp, 0, ['weight', 'loglike'])
 
         if parameter is None:
             self.parameter = pname
         else:
             try:
-                parameter.remove('paramnames')
+                parameter.remove('weight')
             except ValueError:
                 pass
 
@@ -88,29 +88,24 @@ class mcmc_analysis(object):
 
         for i in np.arange(num_chain)+1:
             filename = self.chain_path+'/'+self.chain_prefix+'_'+str(i)+'.txt'
+            print 'reading '+self.chain_prefix+'_'+str(i)+'.txt'
             tmp = np.loadtxt(filename)
 
-            num_element[i-1] = tmp.shape[0] 
+            self.num_element[i-1] = tmp.shape[0] 
 
             for p in self.parameter:
                 ip = np.where(pname == p)[0]
+                print ip
                 
-                if i == 0:
+                if i == 1:
                     self.chain_original[p] = tmp[:,ip]
+                    self.chain[p] = self.chain_original[p][self.num_burnin:]
                 else:
                     self.chain_original[p] = np.append(self.chain_original[p], tmp[:,ip])
+                    self.chain[p] = self.chain_original[p][self.num_burnin:]
 
-        self.num_element = num_element
-
-    def remove_burnin_cosmomc(self, num_burnin=1000):
-
-        idx_delete = []
-        for i in self.num_element:
-            idx_delete.append( (np.arange(num_burnin)+i).tolist )
-
-        for p in self.parameter:
-            self.chain[p] = np.delete( self.chain_original[p], idx_delete )
-
+        self.chain_original['step'] = np.cumsum(self.chain_original['weight'])
+        self.chain['step'] = np.cumsum(self.chain['weight'])
 
     def read_chain_single_column(self):
         

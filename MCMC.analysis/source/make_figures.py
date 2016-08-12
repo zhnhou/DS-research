@@ -26,8 +26,8 @@ def calc_clevel_gmm(logprob):
 
 
 class Figure_ChainAnalysis(object):
-    def __init__(self, chain_path, feature=None):
-        self.mcmc = mcmc_analysis(chain_path=chain_path, feature=feature)
+    def __init__(self, chain_path, chain_prefix=None, feature=None, is_cosmomc=False, num_chain=8):
+        self.mcmc = mcmc_analysis(chain_path=chain_path, chain_prefix=chain_prefix, feature=feature, is_cosmomc=is_cosmomc, num_chain=num_chain)
 
     def create_chain_burnin(self, parameter=None, ncol=4, nrow=2, wspace=0.05, hspace=0.0, left=0.1, right=0.95, num_step=2000, rescale_parameter=False):
 
@@ -43,11 +43,19 @@ class Figure_ChainAnalysis(object):
         i = 0
         for irow in np.arange(nrow):
             for icol in np.arange(ncol):
-                ax = plt.subplot(gs[irow,icol])
-                pmax = np.amax(self.mcmc.chain[self.parameter[i]])
-                pmin = np.amin(self.mcmc.chain[self.parameter[i]])
+                param = self.parameter[i]
 
-                ax.plot(self.mcmc.chain['step'], self.mcmc.chain[self.parameter[i]])
+                ax = plt.subplot(gs[irow,icol])
+                pmax = np.amax(self.mcmc.chain[param])
+                pmin = np.amin(self.mcmc.chain[param])
+
+                x = self.mcmc.chain_original['step'][0:num_step]
+                if self.rescale_parameter:
+                    y = self.mcmc.chain_original[param][0:num_step]
+                else
+                    y = self.mcmc.chain_original[param][0:num_step]
+
+                ax.plot(x, y)
 
                 ax.set_xlim([0,num_step])
                 ax.set_ylim([pmin,pmax])
