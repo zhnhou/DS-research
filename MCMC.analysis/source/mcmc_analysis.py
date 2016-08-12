@@ -95,7 +95,6 @@ class mcmc_analysis(object):
 
             for p in self.parameter:
                 ip = np.where(pname == p)[0]
-                print ip
                 
                 if i == 1:
                     self.chain_original[p] = tmp[:,ip]
