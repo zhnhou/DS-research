@@ -146,7 +146,7 @@ class Healpix_SPTField(object):
 
 class Healpix_MollSPT(object):
 
-    def __init__(self, background, vmin=None, vmax=None, cbar=True, sub=None, title=None):
+    def __init__(self, background, vmin=None, vmax=None, cbar=True, sub=None, title=None, margins=None):
 
         self.background = background
         self.nside = hp.npix2nside(np.shape(background)[0])
@@ -154,10 +154,17 @@ class Healpix_MollSPT(object):
         self.vmax = vmax
         self.cbar = cbar
         self.sub = sub
-        self.title = title
+        self.margins = margins
+
+        if (title is None):
+            self.title = ' '
+        else:
+            self.title = title
 
     def create_background(self):
-        view = hp.mollview(map=self.background, xsize=3000, min=self.vmin, max=self.vmax, cbar=self.cbar, sub=self.sub, title=self.title, return_projected_map=True)
+        view = hp.mollview(map=self.background, xsize=3000, min=self.vmin, max=self.vmax, cbar=self.cbar, sub=self.sub, title=self.title, return_projected_map=True, margins=self.margins)
+
+        return view
 
 
     def create_spt_area(self):
@@ -195,4 +202,7 @@ class Healpix_MollSPT(object):
         rot = hp.Rotator(coord=['C','G'])
         theta, phi = rot(dec_list, ra_list)
 
-        hp.projplot(theta, phi, 'k')
+        lines1 = hp.projplot(theta, phi, 'k')
+        
+        return lines1
+
