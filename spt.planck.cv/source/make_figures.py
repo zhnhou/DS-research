@@ -1,6 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import healpy as hp
+
+def planck_color_map(self):
+
+    cmap = ListedColormap(np.loadtxt("Planck_FreqMap_RGB.txt")/255.)
+    cmap.set_bad("darkgray")
+    cmap.set_under("white")
+
+    return cmap
 
 class Healpix_SPTField(object):
     def __init__(self, nside, background=None, input_coord='G', bad_pixels=None, offset=0, factor=1.0, sub=None, cbar=True, title=' '):
@@ -128,10 +137,21 @@ class Healpix_SPTField(object):
 
         '''
 
-        from matplotlib.colors import ListedColormap
-
         cmap = ListedColormap(np.loadtxt("Planck_FreqMap_RGB.txt")/255.)
         cmap.set_bad("darkgray")
         cmap.set_under("white")
 
         return cmap
+
+
+class Healpix_MollSPT(object):
+
+    def __init__(self, background, vmin=None, vmax=None):
+
+        self.background = background
+        self.nside = np.npix2nside(np.shape(background)[0])
+        self.vmin = vmin
+        self.vmax = vmax
+
+    def create_background(self):
+        view = hp.mollview(map=self.background, xsize=3000, min=self.vmin, max=self.vmax)
