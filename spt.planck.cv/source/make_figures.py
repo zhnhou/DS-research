@@ -146,12 +146,53 @@ class Healpix_SPTField(object):
 
 class Healpix_MollSPT(object):
 
-    def __init__(self, background, vmin=None, vmax=None):
+    def __init__(self, background, vmin=None, vmax=None, cbar=True, sub=None, title=None):
 
         self.background = background
-        self.nside = np.npix2nside(np.shape(background)[0])
+        self.nside = hp.npix2nside(np.shape(background)[0])
         self.vmin = vmin
         self.vmax = vmax
+        self.cbar = cbar
+        self.sub = sub
+        self.title = title
 
     def create_background(self):
-        view = hp.mollview(map=self.background, xsize=3000, min=self.vmin, max=self.vmax)
+        view = hp.mollview(map=self.background, xsize=3000, min=self.vmin, max=self.vmax, cbar=self.cbar, sub=self.sub, title=self.title, return_projected_map=True)
+
+
+    def create_spt_area(self):
+        
+        num_ra = 1000
+        num_dec = 200
+
+        ra = np.arange(num_ra, dtype=np.float32)/num_ra * (360.0+105 - 300) + 300.0
+        ip = np.where(ra > 360.0)
+        ra[ip] = ra[ip] - 360.00
+
+        dec = 90.0 - (np.arange(num_dec, dtype=np.float32)/num_dec * (65.0 - 40.00) - 65.0)
+
+        ra[:] = ra[:] * np.pi/180.0
+        dec[:] = dec[:] * np.pi/180.0
+
+        ra_list = []
+        dec_list = []
+        for i in np.arange(num_ra):
+            ra_list.append( ra[i] )
+            dec_list.append( dec[0] )
+
+        for i in np.arange(num_dec):
+            ra_list.append( ra[num_ra-1] )
+            dec_list.append( dec[i] )
+
+        for i in np.arange(num_ra):
+            ra_list.append( ra[num_ra-1-i] )
+            dec_list.append( dec[num_dec-1] )
+
+        for i in np.arange(num_dec):
+            ra_list.append( ra[0] )
+            dec_list.append( dec[num_dec-1-i] )
+
+        rot = hp.Rotator(coord=['C','G'])
+        theta, phi = rot(dec_list, ra_list)
+
+        hp.projplot(theta, phi, 'k')
