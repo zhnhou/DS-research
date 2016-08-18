@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import healpy as hp
+from scipy.io.idl import readsav
 
 def planck_color_map(self):
 
@@ -10,6 +11,36 @@ def planck_color_map(self):
     cmap.set_under("white")
 
     return cmap
+
+def restore_save(savfile):
+
+    n = readsav(savfile)
+    key = n.keys()
+    if (len(key) != 1):
+        exit(".sav file is not a combined end2end file")
+
+    num_bands = int(n[key[0]]['num_bands'][0])
+    bands = n[key[0]]['bands'][0]
+    dbs_data = n[key[0]]['dbs_data_combined'][0]
+    dbs_sims = n[key[0]]['dbs_sims_combined'][0] # (nsims, nspecs, nbands)
+
+    winminell = int(n[key[0]]['winminell'][0])
+    winmaxell = int(n[key[0]]['winmaxell'][0])
+
+    winfunc_data = n[key[0]]['winfunc_data_combined'][0]
+    winfunc_sims = n[key[0]]['winfunc_sims_combined'][0]
+
+    cov_sv    = n[key[0]]['cov_sv_combined'][0]
+    cov_noise = n[key[0]]['cov_noise_combined'][0]
+
+    d = {'num_bands':num_bands, 'bands':bands, 
+         'dbs_data':dbs_data, 'dbs_sims':dbs_sims,
+         'winminell':winminell, 'winmaxell':winmaxell,
+         'winfunc_data':winfunc_data, 'winfunc_sims':winfunc_sims,
+         'cov_sv':cov_sv, 'cov_noise':cov_noise}
+
+    return d
+
 
 class Healpix_SPTField(object):
     def __init__(self, nside, background=None, input_coord='G', bad_pixels=None, offset=0, factor=1.0, sub=None, cbar=True, title=' '):
@@ -202,7 +233,32 @@ class Healpix_MollSPT(object):
         rot = hp.Rotator(coord=['C','G'])
         theta, phi = rot(dec_list, ra_list)
 
-        lines1 = hp.projplot(theta, phi, 'k')
+        lines1 = hp.projplot(theta, phi, 'white')
         
         return lines1
+
+
+class create_sptxhfi_bandpower(object):
+
+    def __init__(self, sptxspt_endfile=None, sptxhfi_endfile=None, hfixhfi_endfile=None, pdf_file=None, wfunc_corr=True):
+
+        if (sptxspt_endfile is None):
+            self.sptxspt_endfile = 'data/end_combined_spt150sn_spt150sn.sav'
+        else:
+            self.sptxspt_endfile = sptxspt_endfile
+
+        if (sptxhfi_endfile is None):
+            self.sptxhfi_endfile = 'data/end_combined_spt150sn_hfi143sn.sav'
+        else:
+            self.sptxhfi_endfile = sptxhfi_endfile
+
+        if (hfixhfi_endfile is None):
+            self.hfixhfi_endfile = 'data/end_combined_hfi143sn_hfi143sn.sav'
+        else
+            self.hfixhfi_endfile = hfixhfi_endfile
+
+    def read_endfile(self):
+        self.sptxspt = restore_save(self.sptxspt_endfile)
+        self.sptxhfi = restore_save(self.sptxhfi_endfile)
+        self.hfixhfi = restore_save(self.hfixhfi_endfile)
 
