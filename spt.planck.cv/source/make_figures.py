@@ -257,8 +257,59 @@ class create_sptxhfi_bandpower(object):
         else
             self.hfixhfi_endfile = hfixhfi_endfile
 
+        self.wfunc_corr = wfunc_corr
+        self.pdf_file = pdf_file
+
     def read_endfile(self):
         self.sptxspt = restore_save(self.sptxspt_endfile)
         self.sptxhfi = restore_save(self.sptxhfi_endfile)
         self.hfixhfi = restore_save(self.hfixhfi_endfile)
 
+    def process_bandpower(self):
+        ellmin = 650
+        ellmax = 2500
+
+        ip_sptxspt = np.where( (self.sptxspt['bands'] > ellmin) & (self.sptxspt['bands'] < ellmax) )[0]
+        ip_sptxhfi = np.where( (self.sptxhfi['bands'] > ellmin) & (self.sptxhfi['bands'] < ellmax) )[0]
+        ip_hfixhfi = np.where( (self.hfixhfi['bands'] > ellmin) & (self.hfixhfi['bands'] < ellmax) )[0]
+
+        dbs_ave_sptxspt     = np.mean(self.sptxspt['dbs_sims'][:,1,:], axis=0)
+        dbs_ave_hfixhfi     = np.mean(self.hfixhfi['dbs_sims'][:,1,:], axis=0)
+        dbs_ave_sptxhfi     = np.mean(self.sptxhfi['dbs_sims'][:,1,:], axis=0)
+
+        self.dbs_err_sptxspt     = np.sqrt(np.diag(self.sptxspt['cov_sv'][1,:,1,:]))[ip_sptxspt]
+        self.dbs_err_hfixhfi     = np.sqrt(np.diag(self.hfixhfi['cov_sv'][1,:,1,:]))[ip_hfixhfi]
+        self.dbs_err_sptxhfi     = np.sqrt(np.diag(self.sptxhfi['cov_sv'][1,:,1,:]))[ip_sptxhfi]
+
+        self.dbs_data_sptxspt    = self.sptxspt['dbs_data'][1,ip_sptxspt]
+        self.dbs_data_sptxhfi    = self.sptxhfi['dbs_data'][1,ip_sptxhfi]
+        self.dbs_data_hfixhfi    = self.hfixhfi['dbs_data'][1,ip_hfixhfi]
+
+        if (self.wfunc_corr):
+            dbs_data_sptxhfi -= (dbs_ave_sptxhfi[ip_sptxhfi] - dbs_ave_sptxspt[ip_sptxspt])
+            dbs_data_hfixhfi -= (dbs_ave_hfixhfi[ip_hfixhfi] - dbs_ave_sptxspt[ip_sptxspt])
+
+        self.bands = self.sptxspt['bands'][ip_sptxspt]
+
+    def plot_bandpower(self):
+
+        fig, ax = plt.subplots()
+        ax.set_position([0.1,0.1,0.85,0.75])
+
+        ax.errorbar(self.bands, self.dbs_data_sptxspt, yerr=self.dbs_err_sptxspt, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathrm{SPT^{150}_{half1}\times\;SPT^{150}_{half2}}$')
+
+        ax.errorbar(self.bands-12, self.dbs_data_sptxhfi, yerr=self.dbs_err_sptxhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathrm{SPT^{150}_{full}\times\;HFI^{143}_{full}}$')
+
+        ax.errorbar(self.bands+12, self.dbs_data_hfixhfi, yerr=self.dbs_err_hfixhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathrm{HFI^{143}_{half1}\times\;HFI^{143}_{half2}}$')
+    
+        ax.legend(fontsize=12)
+
+        if self.pdf_file is None:
+            pdf_file = 'bandpower.pdf'
+
+        plt.xlim([625,2500])
+        plt.ylim([80,3000])
+        plt.yscale('log')
+        plt.xlabel(r'$\ell$', fontsize=16)
+        plt.ylabel(r'$\mathcal{D}_{\ell}\ [\mathrm{\mu K^2}]$', fontsize=16)
+        plt.savefig(pdf_file, format='pdf')
