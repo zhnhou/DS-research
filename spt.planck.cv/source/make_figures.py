@@ -240,7 +240,7 @@ class Healpix_MollSPT(object):
 
 class create_sptxhfi_bandpower(object):
 
-    def __init__(self, sptxspt_endfile=None, sptxhfi_endfile=None, hfixhfi_endfile=None, pdf_file=None, wfunc_corr=True):
+    def __init__(self, sptxspt_endfile=None, sptxhfi_endfile=None, hfixhfi_endfile=None, pdf_file=None, wfunc_corr=True, recalib=1.00):
 
         if (sptxspt_endfile is None):
             self.sptxspt_endfile = 'data/end_combined_spt150sn_spt150sn.sav'
@@ -254,11 +254,16 @@ class create_sptxhfi_bandpower(object):
 
         if (hfixhfi_endfile is None):
             self.hfixhfi_endfile = 'data/end_combined_hfi143sn_hfi143sn.sav'
-        else
+        else:
             self.hfixhfi_endfile = hfixhfi_endfile
 
         self.wfunc_corr = wfunc_corr
-        self.pdf_file = pdf_file
+        self.recalib = recalib
+
+        if pdf_file is None:
+            self.pdf_file = 'bandpower.pdf'
+        else:
+            self.pdf_file = pdf_file
 
     def read_endfile(self):
         self.sptxspt = restore_save(self.sptxspt_endfile)
@@ -286,15 +291,15 @@ class create_sptxhfi_bandpower(object):
         self.dbs_data_hfixhfi    = self.hfixhfi['dbs_data'][1,ip_hfixhfi]
 
         if (self.wfunc_corr):
-            dbs_data_sptxhfi -= (dbs_ave_sptxhfi[ip_sptxhfi] - dbs_ave_sptxspt[ip_sptxspt])
-            dbs_data_hfixhfi -= (dbs_ave_hfixhfi[ip_hfixhfi] - dbs_ave_sptxspt[ip_sptxspt])
+            self.dbs_data_sptxhfi -= (dbs_ave_sptxhfi[ip_sptxhfi] - dbs_ave_sptxspt[ip_sptxspt]) * self.recalib**2
+            self.dbs_data_hfixhfi -= (dbs_ave_hfixhfi[ip_hfixhfi] - dbs_ave_sptxspt[ip_sptxspt]) * self.recalib
 
         self.bands = self.sptxspt['bands'][ip_sptxspt]
 
     def plot_bandpower(self):
 
         fig, ax = plt.subplots()
-        ax.set_position([0.1,0.1,0.85,0.75])
+        ax.set_position([0.15,0.15,0.8,0.7])
 
         ax.errorbar(self.bands, self.dbs_data_sptxspt, yerr=self.dbs_err_sptxspt, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathrm{SPT^{150}_{half1}\times\;SPT^{150}_{half2}}$')
 
@@ -302,14 +307,18 @@ class create_sptxhfi_bandpower(object):
 
         ax.errorbar(self.bands+12, self.dbs_data_hfixhfi, yerr=self.dbs_err_hfixhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathrm{HFI^{143}_{half1}\times\;HFI^{143}_{half2}}$')
     
-        ax.legend(fontsize=12)
-
-        if self.pdf_file is None:
-            pdf_file = 'bandpower.pdf'
+        ax.legend(fontsize=16, frameon=False)
 
         plt.xlim([625,2500])
         plt.ylim([80,3000])
         plt.yscale('log')
-        plt.xlabel(r'$\ell$', fontsize=16)
-        plt.ylabel(r'$\mathcal{D}_{\ell}\ [\mathrm{\mu K^2}]$', fontsize=16)
-        plt.savefig(pdf_file, format='pdf')
+
+        ax.set_xticks([1000,1500,2000,2500])
+        ax.set_yticks([100,1000])
+
+        ax.set_xticklabels([r'$1000$',r'$1500$',r'$2000$',r'$2500$'], fontsize=22)
+        ax.set_yticklabels([r'$10^2$', r'$10^3$'], fontsize=22)
+
+        plt.xlabel(r'$\ell$', fontsize=22)
+        plt.ylabel(r'$\mathcal{D}_{\ell}\ [\mathrm{\mu K^2}]$', fontsize=22)
+        plt.savefig(self.pdf_file, format='pdf')
