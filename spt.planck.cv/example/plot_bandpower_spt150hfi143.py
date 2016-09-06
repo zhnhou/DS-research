@@ -12,6 +12,7 @@ if __name__ == '__main__':
 
     bp = create_sptxhfi_bandpower(pdf_file=pdf_file, wfunc_corr=False)
     bp.read_endfile()
+    bp.read_beam_cov()
     bp.process_bandpower()
     bp.plot_bandpower()
 
@@ -21,5 +22,6 @@ if __name__ == '__main__':
 
     bp = create_sptxhfi_bandpower(pdf_file=pdf_file, wfunc_corr=True, recalib=1.0088)
     bp.read_endfile()
+    bp.read_beam_cov()
     bp.process_bandpower()
-    bp.plot_bandpower()
+    bp.plot_bandpower(set_yticklabels=False, set_legend=False)

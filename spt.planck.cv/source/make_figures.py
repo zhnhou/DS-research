@@ -41,6 +41,49 @@ def restore_save(savfile):
 
     return d
 
+def restore_end_save(savfile, ellmin=None, ellmax=None):
+
+    n = readsav(savfile)
+    key = n.keys()
+    if (len(key) != 1):
+        exit(".sav file is not a combined end2end file")
+
+    bands = n[key[0]]['bands'][0]
+
+    if (not ellmin):
+        ellmin = bands[0]
+
+    if (not ellmax):
+        ellmax = bands[-1]
+
+    index1 = bands >= ellmin
+    index2 = bands <= ellmax
+
+    index = index1 * index2
+
+    bands = bands[index]
+    num_bands = len(bands)
+
+    dbs_data = n[key[0]]['dbs_data_combined'][0][:,index]
+    dbs_sims = n[key[0]]['dbs_sims_combined'][0][:,:,index] # (nsims, nspecs, nbands)
+
+    winminell = int(n[key[0]]['winminell'][0])
+    winmaxell = int(n[key[0]]['winmaxell'][0])
+
+    winfunc_data = n[key[0]]['winfunc_data_combined'][0][:,index,:] # (nspecs, nbands, nell_wf)
+    winfunc_sims = n[key[0]]['winfunc_sims_combined'][0][:,index,:]
+
+    cov_sv    = n[key[0]]['cov_sv_combined'][0][:,index,:,index]
+    cov_noise = n[key[0]]['cov_noise_combined'][0][:,index,:,index]
+
+    d = {'num_bands':num_bands, 'bands':bands, 
+         'dbs_data':dbs_data, 'dbs_sims':dbs_sims,
+         'winminell':winminell, 'winmaxell':winmaxell,
+         'winfunc_data':winfunc_data, 'winfunc_sims':winfunc_sims,
+         'cov_sv':cov_sv, 'cov_noise':cov_noise}
+
+    return d
+
 
 class Healpix_SPTField(object):
     def __init__(self, nside, background=None, input_coord='G', bad_pixels=None, offset=0, factor=1.0, sub=None, cbar=True, title=' '):
@@ -270,6 +313,12 @@ class create_sptxhfi_bandpower(object):
         self.sptxhfi = restore_save(self.sptxhfi_endfile)
         self.hfixhfi = restore_save(self.hfixhfi_endfile)
 
+    def read_beam_cov(self):
+        tmp = readsav('data/beam_cov_150x150_150x143_143x143.sav')
+        self.beam_cov_150x150 = tmp['c11'][13:50,13:50]
+        self.beam_cov_150x143 = tmp['c22'][13:50,13:50]
+        self.beam_cov_143x143 = tmp['c33'][13:50,13:50]
+
     def process_bandpower(self):
         ellmin = 650
         ellmax = 2500
@@ -286,6 +335,10 @@ class create_sptxhfi_bandpower(object):
         self.dbs_err_hfixhfi     = np.sqrt(np.diag(self.hfixhfi['cov_sv'][1,:,1,:]))[ip_hfixhfi]
         self.dbs_err_sptxhfi     = np.sqrt(np.diag(self.sptxhfi['cov_sv'][1,:,1,:]))[ip_sptxhfi]
 
+        self.dbs_err_sptxspt += np.sqrt(np.diag(self.beam_cov_150x150))
+        self.dbs_err_sptxhfi += np.sqrt(np.diag(self.beam_cov_150x143))
+        self.dbs_err_hfixhfi += np.sqrt(np.diag(self.beam_cov_143x143))
+
         self.dbs_data_sptxspt    = self.sptxspt['dbs_data'][1,ip_sptxspt]
         self.dbs_data_sptxhfi    = self.sptxhfi['dbs_data'][1,ip_sptxhfi]
         self.dbs_data_hfixhfi    = self.hfixhfi['dbs_data'][1,ip_hfixhfi]
@@ -296,7 +349,7 @@ class create_sptxhfi_bandpower(object):
 
         self.bands = self.sptxspt['bands'][ip_sptxspt]
 
-    def plot_bandpower(self):
+    def plot_bandpower(self, set_yticklabels=True, set_legend=True):
 
         fig, ax = plt.subplots()
         ax.set_position([0.15,0.15,0.8,0.7])
@@ -306,8 +359,9 @@ class create_sptxhfi_bandpower(object):
         ax.errorbar(self.bands-12, self.dbs_data_sptxhfi, yerr=self.dbs_err_sptxhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathrm{SPT^{150}_{full}\times\;HFI^{143}_{full}}$')
 
         ax.errorbar(self.bands+12, self.dbs_data_hfixhfi, yerr=self.dbs_err_hfixhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathrm{HFI^{143}_{half1}\times\;HFI^{143}_{half2}}$')
-    
-        ax.legend(fontsize=16, frameon=False)
+   
+        if set_legend: 
+            ax.legend(fontsize=16, frameon=False)
 
         plt.xlim([625,2500])
         plt.ylim([80,3000])
@@ -317,8 +371,126 @@ class create_sptxhfi_bandpower(object):
         ax.set_yticks([100,1000])
 
         ax.set_xticklabels([r'$1000$',r'$1500$',r'$2000$',r'$2500$'], fontsize=22)
-        ax.set_yticklabels([r'$10^2$', r'$10^3$'], fontsize=22)
+        if set_yticklabels:
+            ax.set_yticklabels([r'$10^2$', r'$10^3$'], fontsize=22)
+            plt.ylabel(r'$\mathcal{D}_{\ell}\ [\mathrm{\mu K^2}]$', fontsize=22)
+        else:
+            ax.set_yticklabels([' ', ' '], fontsize=0)
+            plt.ylabel(' ', fontsize=0)
 
         plt.xlabel(r'$\ell$', fontsize=22)
-        plt.ylabel(r'$\mathcal{D}_{\ell}\ [\mathrm{\mu K^2}]$', fontsize=22)
-        plt.savefig(self.pdf_file, format='pdf')
+        plt.savefig(self.pdf_file, format='pdf', transparent=True)
+
+
+class create_residual_figure(object):
+
+    def __init__(self, end_143x143, end_150x143, end_150x150, res_beam_cov=None):
+
+        self.end_143x143 = end_143x143
+        self.end_150x143 = end_150x143
+        self.end_150x150 = end_150x150
+
+
+        if (res_beam_cov is None):
+            self.rescale_143x143 = 1.00
+            self.rescale_150x143 = 1.0114900
+            self.rescale_150x150 = 1.0110200**2
+        else:
+            self.rescale_143x143 = 1.00
+            self.rescale_150x143 = 1.0090700
+            self.rescale_150x150 = 1.0090700**2
+
+        self.res_beam_cov = res_beam_cov
+
+        if (not np.array_equal(end_150x143['bands'], end_150x150['bands']) ):
+            print "The band definition of two end2end files are different"
+            exit()
+
+        if (not np.array_equal(end_143x143['bands'], end_150x150['bands']) ):
+            print "The band definition of two end2end files are different"
+            exit()
+
+    def process_end(self):
+        
+        end_143x143_sims_mean = self.end_143x143['dbs_sims'][:,1,:].mean(axis=0)
+        end_150x143_sims_mean = self.end_150x143['dbs_sims'][:,1,:].mean(axis=0)
+        end_150x150_sims_mean = self.end_150x150['dbs_sims'][:,1,:].mean(axis=0)
+
+        winfunc_corr_150x143_150x150 = end_150x143_sims_mean - end_150x150_sims_mean
+        winfunc_corr_143x143_150x150 = end_143x143_sims_mean - end_150x150_sims_mean
+
+        res_150x143_150x150 = self.end_150x143['dbs_data'][1,:]*self.rescale_150x143 - self.end_150x150['dbs_data'][1,:]*self.rescale_150x150 - winfunc_corr_150x143_150x150
+        res_143x143_150x150 = self.end_143x143['dbs_data'][1,:]*self.rescale_143x143 - self.end_150x150['dbs_data'][1,:]*self.rescale_150x150 - winfunc_corr_143x143_150x150
+
+
+        res_sims_150x143_150x150 = self.end_150x143['dbs_sims'][:,1,:] - self.end_150x150['dbs_sims'][:,1,:]
+        res_sims_143x143_150x150 = self.end_143x143['dbs_sims'][:,1,:] - self.end_150x150['dbs_sims'][:,1,:]
+
+        cov_150x143_150x150 = np.cov(res_sims_150x143_150x150.transpose())
+        cov_143x143_150x150 = np.cov(res_sims_143x143_150x150.transpose())
+
+        error_150x143_150x150_nobeam = np.sqrt(np.diag(cov_150x143_150x150))
+        error_143x143_150x150_nobeam = np.sqrt(np.diag(cov_143x143_150x150))
+
+        self.error_150x143_150x150_nobeam = error_150x143_150x150_nobeam
+        self.error_143x143_150x150_nobeam = error_143x143_150x150_nobeam
+
+        if (not (self.res_beam_cov is None)):
+            cov_150x143_150x150 += self.res_beam_cov['d21d21']
+            cov_143x143_150x150 += self.res_beam_cov['d31d31']
+
+        error_150x143_150x150 = np.sqrt(np.diag(cov_150x143_150x150))
+        error_143x143_150x150 = np.sqrt(np.diag(cov_143x143_150x150))
+
+        d = {'res_data_150x143_150x150':res_150x143_150x150, 'res_cov_150x143_150x150':cov_150x143_150x150,
+             'res_data_143x143_150x150':res_143x143_150x150, 'res_cov_143x143_150x150':cov_143x143_150x150,
+             'error_150x143_150x150':error_150x143_150x150,  'error_143x143_150x150':error_143x143_150x150}
+
+        self.res_info = d
+
+    def make_residual_figure(self, pdf_file):
+
+        error_150x143_150x150 = np.sqrt(np.diag(self.res_info['res_cov_150x143_150x150']))
+        error_143x143_150x150 = np.sqrt(np.diag(self.res_info['res_cov_143x143_150x150']))
+
+        yticks = [-40, -20, 0, 20, 40]
+        xticks = [650,1000,1500,2000,2500]
+
+        fig = plt.figure()
+        ax1 = fig.add_subplot(211)
+        ax1.set_position([0.13,0.50,0.85,0.25])
+
+        ax1.plot([0,3000],[0,0], color='black', linewidth=0.5, zorder=0)
+        ax1.errorbar(self.end_150x143['bands'], self.res_info['res_data_150x143_150x150'], yerr=error_150x143_150x150, fmt='o', markersize='0', elinewidth=2, capsize=2., capthick=2., zorder=3)
+#ax1.errorbar(self.end_150x143['bands'], self.res_info['res_data_150x143_150x150'], yerr=self.error_150x143_150x150_nobeam, fmt='o', markersize='0', elinewidth=2, capsize=0., capthick=2.)
+        
+        ax1.set_xlim([625,2525])
+        ax1.set_ylim([-55,55])
+        ax1.set_xticks(xticks)
+        ax1.set_yticks(yticks)
+        ax1.axes.set_xticklabels([" "," "," "," "," "])
+        ax1.axes.set_yticklabels(["$-40$","$-20$","$0$","$20$","$40$"], fontsize=16)
+
+        ax1.text(750, 35, r"$\mathcal{D}_b^{150 \times 143} - \mathcal{D}_b^{150 \times 150}$", fontsize=18)
+
+
+        yticks = [-100, -50, 0, 50, 100]
+        ax2 = fig.add_subplot(212)
+        ax2.set_position([0.13,0.25,0.85,0.25])
+        
+        ax2.plot([0,3000],[0,0], color='black', linewidth=0.5, zorder=0)
+        ax2.errorbar(self.end_143x143['bands'], self.res_info['res_data_143x143_150x150'], yerr=error_143x143_150x150, fmt='o', markersize='0', elinewidth=2., capsize=2., capthick=2., zorder=3)
+        ax2.set_xlim([625,2525])
+        ax2.set_ylim([-137.5,137.5])
+
+        ax2.set_xticks(xticks)
+        ax2.set_yticks(yticks)
+        ax2.axes.set_xticklabels(["$650$","$1000$","$1500$","$2000$","$2500$"], fontsize=16)
+        ax2.axes.set_yticklabels(["$-100$","$-50$","$0$","$50$","$100$"], fontsize=16)
+        ax2.set_xlabel("$\ell$", fontsize=20)
+
+        ax2.text(750, 87.5, r"$\mathcal{D}_b^{143 \times 143} - \mathcal{D}_b^{150 \times150}$", fontsize=18)
+        ax2.text(400,137.5,"$\Delta \mathcal{D}_b\,[\mathrm{\mu K^2}]$", rotation=90, ha='center', va='center', fontsize=20)
+        
+        plt.savefig(pdf_file, format='pdf')
+        plt.clf()
