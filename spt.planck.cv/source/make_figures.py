@@ -381,6 +381,31 @@ class create_sptxhfi_bandpower(object):
         plt.xlabel(r'$\ell$', fontsize=22)
         plt.savefig(self.pdf_file, format='pdf', transparent=True)
 
+    def plot_bandpower_large(self):
+        fig, ax = plt.subplots()
+        ax.set_position([0.13,0.05,0.85,0.50])
+
+        ax.errorbar(self.bands, self.dbs_data_sptxspt, yerr=self.dbs_err_sptxspt, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathcal{D}_b^{150 \times 150}$', color='red')
+
+        ax.errorbar(self.bands-12, self.dbs_data_sptxhfi, yerr=self.dbs_err_sptxhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathcal{D}_b^{150 \times 143}$', color='blue')
+
+        ax.errorbar(self.bands+12, self.dbs_data_hfixhfi, yerr=self.dbs_err_hfixhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathcal{D}_b^{143 \times 143}$', color='green')
+   
+        ax.legend(fontsize=16, frameon=False)
+
+        plt.xlim([625,2500])
+        plt.ylim([80,3000])
+        plt.yscale('log')
+
+        ax.set_xticks([1000,1500,2000,2500])
+        ax.set_yticks([100,1000])
+
+        ax.set_xticklabels([' ',' ',' ',' '], fontsize=22)
+        ax.set_yticklabels([r'$10^2$', r'$10^3$'], fontsize=22)
+        plt.ylabel(r'$\mathcal{D}_{b}\ [\mathrm{\mu K^2}]$', fontsize=22)
+
+        plt.savefig(self.pdf_file, format='pdf', transparent=True)
+
 
 class create_residual_figure(object):
 

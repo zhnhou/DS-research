@@ -65,7 +65,7 @@ if __name__ == '__main__':
     ax.set_xticklabels([r'$1000$',r'$1500$',r'$2000$',r'$2500$'], fontsize=22)
 
     ax.set_yticks([0.0,0.005,0.01])
-    ax.set_yticklabels([r'$0$',r'$0.005$',r'$0.100$'], fontsize=22)
+    ax.set_yticklabels([r'$0$',r'$0.005$',r'$0.010$'], fontsize=22)
 
     plt.legend(frameon=False, fontsize=22)
 
