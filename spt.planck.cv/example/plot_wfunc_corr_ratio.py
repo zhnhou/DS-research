@@ -53,20 +53,23 @@ if __name__ == '__main__':
     ax.set_position([0.15,0.15,0.8,0.7])
 
 #    plt.plot(bands, corr1_err / residual.res_info['error_150x143_150x150'])
-    plt.plot(bands, corr1_err / bandpower.dbs_err_sptxhfi, linewidth=3, label=r'$\Delta\delta D_b^{150\times 143} / \Delta D_b^{150\times 143}$')
+#    plt.plot(bands, corr1_err / bandpower.dbs_err_sptxhfi, linewidth=3, label=r'$\Delta\delta D_b^{150\times 143} / \Delta D_b^{150\times 143}$')
+
+    plt.plot(bands, corr1_ave / bandpower.dbs_ave_sptxhfi, linewidth=4.5, label=r'$\delta D_b^{150\times 143} / D_b^{150\times 143}$', color='green')
 
 #    plt.plot(bands, corr2_err / residual.res_info['error_143x143_150x150'])
-    plt.plot(bands, corr2_err / bandpower.dbs_err_hfixhfi, linewidth=3, label=r'$\Delta\delta D_b^{143\times 143} / \Delta D_b^{143\times 143}$')
+#    plt.plot(bands, corr2_err / bandpower.dbs_err_hfixhfi, linewidth=3, label=r'$\Delta\delta D_b^{143\times 143} / \Delta D_b^{143\times 143}$')
+
+    plt.plot(bands, corr2_ave / bandpower.dbs_ave_hfixhfi, linewidth=4.5, label=r'$\delta D_b^{143\times 143} / D_b^{143\times 143}$', color='blue')
 
     ax.set_xlim([650,2500])
-    ax.set_ylim([0,0.014])
+    ax.set_ylim([0,0.15])
 
     ax.set_xticks([1000,1500,2000,2500])
     ax.set_xticklabels([r'$1000$',r'$1500$',r'$2000$',r'$2500$'], fontsize=22)
 
-    ax.set_yticks([0.0,0.005,0.01])
-    ax.set_yticklabels([r'$0$',r'$0.005$',r'$0.010$'], fontsize=22)
+    ax.set_yticks([0.0,0.05,0.10,0.15])
+    ax.set_yticklabels([r'$0$',r'$0.05$',r'$0.10$',r'$0.15$'], fontsize=22)
 
-    plt.legend(frameon=False, fontsize=22)
-
-    plt.savefig('wfunc_corr_ratio.pdf', format='pdf', transparent=True)
+    plt.legend(frameon=False, fontsize=22, loc=2)
+    plt.savefig('wfunc_corr_vs_Db_ratio.pdf', format='pdf', transparent=True)

@@ -327,9 +327,9 @@ class create_sptxhfi_bandpower(object):
         ip_sptxhfi = np.where( (self.sptxhfi['bands'] > ellmin) & (self.sptxhfi['bands'] < ellmax) )[0]
         ip_hfixhfi = np.where( (self.hfixhfi['bands'] > ellmin) & (self.hfixhfi['bands'] < ellmax) )[0]
 
-        dbs_ave_sptxspt     = np.mean(self.sptxspt['dbs_sims'][:,1,:], axis=0)
-        dbs_ave_hfixhfi     = np.mean(self.hfixhfi['dbs_sims'][:,1,:], axis=0)
-        dbs_ave_sptxhfi     = np.mean(self.sptxhfi['dbs_sims'][:,1,:], axis=0)
+        self.dbs_ave_sptxspt     = np.mean(self.sptxspt['dbs_sims'][:,1,:], axis=0)
+        self.dbs_ave_hfixhfi     = np.mean(self.hfixhfi['dbs_sims'][:,1,:], axis=0)
+        self.dbs_ave_sptxhfi     = np.mean(self.sptxhfi['dbs_sims'][:,1,:], axis=0)
 
         self.dbs_err_sptxspt     = np.sqrt(np.diag(self.sptxspt['cov_sv'][1,:,1,:]))[ip_sptxspt]
         self.dbs_err_hfixhfi     = np.sqrt(np.diag(self.hfixhfi['cov_sv'][1,:,1,:]))[ip_hfixhfi]
@@ -344,10 +344,17 @@ class create_sptxhfi_bandpower(object):
         self.dbs_data_hfixhfi    = self.hfixhfi['dbs_data'][1,ip_hfixhfi]
 
         if (self.wfunc_corr):
-            self.dbs_data_sptxhfi -= (dbs_ave_sptxhfi[ip_sptxhfi] - dbs_ave_sptxspt[ip_sptxspt]) * self.recalib**2
-            self.dbs_data_hfixhfi -= (dbs_ave_hfixhfi[ip_hfixhfi] - dbs_ave_sptxspt[ip_sptxspt]) * self.recalib
+            self.dbs_data_sptxhfi -= (self.dbs_ave_sptxhfi[ip_sptxhfi] - self.dbs_ave_sptxspt[ip_sptxspt]) * self.recalib**2
+            self.dbs_data_hfixhfi -= (self.dbs_ave_hfixhfi[ip_hfixhfi] - self.dbs_ave_sptxspt[ip_sptxspt]) * self.recalib
 
         self.bands = self.sptxspt['bands'][ip_sptxspt]
+
+        self.wfunc_corr_sptxhfi_sptxspt = self.dbs_ave_sptxhfi[ip_sptxhfi] - self.dbs_ave_sptxspt[ip_sptxspt]
+        self.wfunc_corr_hfixhfi_sptxspt = self.dbs_ave_hfixhfi[ip_hfixhfi] - self.dbs_ave_sptxspt[ip_sptxspt]
+
+        self.dbs_ave_sptxspt = self.dbs_ave_sptxspt[ip_sptxspt]
+        self.dbs_ave_hfixhfi = self.dbs_ave_hfixhfi[ip_hfixhfi]
+        self.dbs_ave_sptxhfi = self.dbs_ave_sptxhfi[ip_sptxhfi]
 
     def plot_bandpower(self, set_yticklabels=True, set_legend=True):
 
@@ -387,20 +394,20 @@ class create_sptxhfi_bandpower(object):
 
         ax.errorbar(self.bands, self.dbs_data_sptxspt, yerr=self.dbs_err_sptxspt, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathcal{D}_b^{150 \times 150}$', color='red')
 
-        ax.errorbar(self.bands-12, self.dbs_data_sptxhfi, yerr=self.dbs_err_sptxhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathcal{D}_b^{150 \times 143}$', color='blue')
+        ax.errorbar(self.bands-12, self.dbs_data_sptxhfi, yerr=self.dbs_err_sptxhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathcal{D}_b^{150 \times 143}$', color='green')
 
-        ax.errorbar(self.bands+12, self.dbs_data_hfixhfi, yerr=self.dbs_err_hfixhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathcal{D}_b^{143 \times 143}$', color='green')
+        ax.errorbar(self.bands+12, self.dbs_data_hfixhfi, yerr=self.dbs_err_hfixhfi, fmt='o', markersize='0', elinewidth=1.5, capsize=1.5, capthick=1.5, label=r'$\mathcal{D}_b^{143 \times 143}$', color='blue')
    
         ax.legend(fontsize=16, frameon=False)
 
-        plt.xlim([625,2500])
+        plt.xlim([625,2525])
         plt.ylim([80,3000])
         plt.yscale('log')
 
-        ax.set_xticks([1000,1500,2000,2500])
+        ax.set_xticks([650,1000,1500,2000,2500])
         ax.set_yticks([100,1000])
 
-        ax.set_xticklabels([' ',' ',' ',' '], fontsize=22)
+        ax.set_xticklabels([' ',' ',' ',' ',' '], fontsize=22)
         ax.set_yticklabels([r'$10^2$', r'$10^3$'], fontsize=22)
         plt.ylabel(r'$\mathcal{D}_{b}\ [\mathrm{\mu K^2}]$', fontsize=22)
 
@@ -483,7 +490,7 @@ class create_residual_figure(object):
 
         fig = plt.figure()
         ax1 = fig.add_subplot(211)
-        ax1.set_position([0.13,0.50,0.85,0.25])
+        ax1.set_position([0.13,0.70,0.85,0.25])
 
         ax1.plot([0,3000],[0,0], color='black', linewidth=0.5, zorder=0)
         ax1.errorbar(self.end_150x143['bands'], self.res_info['res_data_150x143_150x150'], yerr=error_150x143_150x150, fmt='o', markersize='0', elinewidth=2, capsize=2., capthick=2., zorder=3)
@@ -501,7 +508,7 @@ class create_residual_figure(object):
 
         yticks = [-100, -50, 0, 50, 100]
         ax2 = fig.add_subplot(212)
-        ax2.set_position([0.13,0.25,0.85,0.25])
+        ax2.set_position([0.13,0.45,0.85,0.25])
         
         ax2.plot([0,3000],[0,0], color='black', linewidth=0.5, zorder=0)
         ax2.errorbar(self.end_143x143['bands'], self.res_info['res_data_143x143_150x150'], yerr=error_143x143_150x150, fmt='o', markersize='0', elinewidth=2., capsize=2., capthick=2., zorder=3)
@@ -517,5 +524,5 @@ class create_residual_figure(object):
         ax2.text(750, 87.5, r"$\mathcal{D}_b^{143 \times 143} - \mathcal{D}_b^{150 \times150}$", fontsize=18)
         ax2.text(400,137.5,"$\Delta \mathcal{D}_b\,[\mathrm{\mu K^2}]$", rotation=90, ha='center', va='center', fontsize=20)
         
-        plt.savefig(pdf_file, format='pdf')
+        plt.savefig(pdf_file, format='pdf', transparent=True)
         plt.clf()
